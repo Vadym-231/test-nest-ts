@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Possible Payment Statuses;
+enum PaymentStatus {
+  RECIEVED
+  PROCESSED
+  BLOCKED
+  COMPLETED
+  PAYED
+}
+
+// Qouta Schema (Imitation of dynamic payments qoutas)
+model Quotas {
+  id    Int     @default(autoincrement()) @id
+
+  // Qouta type A
+  quotaTypeA Int
+
+  // Qouta type B
+  quotaTypeB Int
+
+  // Blocking D time in miliseconds
+  blockingPercent Int
+
+  // Created date
+  createdAt DateTime  @default(now())
+
+  payments Payment[]
+}
+
+// Shop DB Schema;
+model Client {
+  id    Int     @default(autoincrement()) @id
+  // shop name;
+  name String  @unique
+
+  // [internal prisma fields]
+  payments Payment[]
+
+  // Qouta Percent (Qouta type C)
+  quotasPercent Float
+
+  // client balance
+  balance Int @default(0)
+}
+
+model Payment {
+  id        Int      @default(autoincrement()) @id
+
+  // remeber processed qoutas values;
+  quota Quotas? @relation(fields: [quotaId], references: [id])
+  quotaId Int?
+
+  // Created date
+  createdAt DateTime @default(now())
+
+  // Updated date
+  updatedAt DateTime @default(now())
+
+  // Transaction currency | I dont know how this servis can work without this field
+  currency String @default("USD")
+
+  // Trasaction amount
+  amount   Float
+
+  // Blocked amount
+  blockedAmount Int @default(0)
+
+
+  // Transaction status
+  status PaymentStatus @default(RECIEVED)
+
+  // []
+  client Client @relation(fields: [clientId], references: [id])
+
+  // Ref to Client
+  clientId Int
+}
